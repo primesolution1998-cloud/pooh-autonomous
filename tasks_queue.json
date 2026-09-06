@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "domain": "financial_services",
+        "task": "Optimize DSA leads.",
+        "status": "completed"
+    },
+    {
+        "task": "Test Cloud Synchronization Sync",
+        "status": "completed"
+    },
+    {
+        "task": "Test Cloud Synchronization Sync",
+        "status": "completed"
+    }
+]
