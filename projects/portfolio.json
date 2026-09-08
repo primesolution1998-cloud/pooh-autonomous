@@ -1,0 +1,11 @@
+{
+  "leadsindia": {"domain":"https://leadsindia.in","type":"property-loans-leads","priority":"high"},
+  "mamma": {"domain":"https://mamma.leadsindia.in","type":"automation-communication","priority":"high"},
+  "ytc_education": {"domain":"https://ytceducation.com","type":"english-education-books","priority":"high"},
+  "shruti_ai": {"domain":"https://ai.ytceducation.com","type":"ai-tutor","priority":"high"},
+  "ytc_preschool": {"domain":"https://ytcpreschool.in","type":"preschool-education","priority":"medium"},
+  "ytc_preschool_app": {"domain":"https://app.ytcpreschool.in","type":"education-app","priority":"medium"},
+  "assanloan": {"domain":"https://assanloan.co.in","type":"loans","priority":"high"},
+  "dance_reel_india": {"domain":"https://dancereelindia.co.in","type":"media-entertainment","priority":"medium"},
+  "easy_private_funding": {"domain":"https://easyprivatefunding.co.in","type":"finance","priority":"medium"}
+}

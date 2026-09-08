@@ -1,0 +1,16 @@
+{
+  "september_2026": {
+    "turnover_target": 5000000,
+    "currency": "INR",
+    "deadline": "2026-09-30",
+    "strategy": "portfolio_maximum_profitable_growth",
+    "rules": {
+      "track_profit": true,
+      "track_roas": true,
+      "track_cac": true,
+      "scale_winners": true,
+      "reduce_losers": true,
+      "approval_required_for_new_spend": true
+    }
+  }
+}
