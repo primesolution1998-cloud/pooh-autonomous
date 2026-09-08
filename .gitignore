@@ -6,3 +6,4 @@ __pycache__/
 run_pooh_cloud.py.backup
 
 projects/task_history.json
+credentials/
