@@ -1,0 +1,41 @@
+name: POOH CI
+
+on:
+  push:
+    branches:
+      - feature/master-orchestrator
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile core
+        run: python -m compileall -q core agents
+
+      - name: Verify master prompt
+        run: python -c 'from core.master_prompt import load_master_prompt; assert len(load_master_prompt().strip()) > 1000'
+
+      - name: Verify routing
+        run: python -c 'from core.pooh_brain import analyze_task; r=analyze_task("LeadsIndia website check karo"); assert r["project"]=="leadsindia" and r["department"]=="engineering"'
+
+      - name: Verify approval gate
+        run: python -c 'from core.command_processor import process_command; r=process_command("Meta ads me 5000 spend karo"); assert "AWAITING_APPROVAL" in r'
+
+      - name: Run repo self-test
+        run: ./poohctl test
