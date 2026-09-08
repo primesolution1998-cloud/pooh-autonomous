@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID", "")
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}" if TELEGRAM_BOT_TOKEN else ""
 
 def send_telegram_message(chat_id, text):
@@ -39,7 +40,7 @@ def api_command():
     return {"response": process_command(text)}, 200
 
 if TELEGRAM_BOT_TOKEN:
-    @app.route(f"/webhook/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
+    @app.route("/webhook/telegram", methods=["POST"])
     def telegram_webhook():
         update = request.get_json()
         if not update or "message" not in update:
