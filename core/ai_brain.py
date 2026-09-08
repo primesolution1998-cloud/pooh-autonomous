@@ -1,6 +1,9 @@
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
 from core.master_prompt import load_master_prompt
+
+load_dotenv()
 
 DEFAULT_MODEL = os.getenv("POOH_MODEL", "gpt-5.6")
 
