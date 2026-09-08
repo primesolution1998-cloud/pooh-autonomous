@@ -2,7 +2,7 @@
 set -e
 case "$1" in
   test)
-    python3 -m compileall -q core agents && echo "POOH CORE OK"
+    python3 -m compileall -q core agents integrations && echo "POOH CORE OK"
     ;;
   status)
     git status --short
