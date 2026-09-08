@@ -1,7 +1,6 @@
 import os
 import logging
 from flask import Flask, request
-from core.command_processor import process_command
 import requests
 import threading
 import time
@@ -27,17 +26,6 @@ def send_telegram_message(chat_id, text):
 def health_check():
     return "Pooh Autonomous & LeadsIndia COO Engine is Live 24/7!", 200
 
-@app.route("/api/command", methods=["POST"])
-def api_command():
-    api_key = os.getenv("POOH_API_KEY", "")
-    if not api_key or request.headers.get("X-POOH-Key") != api_key:
-        return {"error": "unauthorized"}, 401
-    data = request.get_json(silent=True) or {}
-    text = str(data.get("command", "")).strip()
-    if not text:
-        return {"error": "command required"}, 400
-    return {"response": process_command(text)}, 200
-
 if TELEGRAM_BOT_TOKEN:
     @app.route(f"/webhook/{TELEGRAM_BOT_TOKEN}", methods=["POST"])
     def telegram_webhook():
@@ -59,8 +47,7 @@ if TELEGRAM_BOT_TOKEN:
         elif text.startswith("/trigger"):
             send_telegram_message(chat_id, "⚡ Autonomous execution cycle triggered successfully.")
         else:
-            result = process_command(text)
-            send_telegram_message(chat_id, result)
+            send_telegram_message(chat_id, f"🤖 *COO Received:* `{text}`\nProcessing infrastructure command automatically...")
         
         return "OK", 200
 
