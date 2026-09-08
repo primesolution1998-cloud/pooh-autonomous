@@ -4,3 +4,5 @@ __pycache__/
 *.log
 .env
 run_pooh_cloud.py.backup
+
+projects/task_history.json

@@ -1,5 +1,6 @@
 from core.router import route_task
 from core.project_manager import list_projects, assign_manager
+from core.master_prompt import load_master_prompt
 
 def detect_project(task):
     text = task.lower()
@@ -9,6 +10,7 @@ def detect_project(task):
     return "portfolio"
 
 def analyze_task(task):
+    master_prompt = load_master_prompt()
     project = detect_project(task)
     department = route_task(task)
 
@@ -22,5 +24,6 @@ def analyze_task(task):
         "project": project,
         "department": department,
         "manager": manager,
-        "reports_to": "POOH"
+        "reports_to": "POOH",
+        "master_prompt_loaded": bool(master_prompt.strip())
     }

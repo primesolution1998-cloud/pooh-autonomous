@@ -22,7 +22,8 @@ def process_command(text):
             f"Execution: AWAITING_APPROVAL"
         )
 
-    execution = {"status":"ROUTED"}
+    update_status(task, "RUNNING")
+    execution = {"status":"PLANNED","reason":"Portfolio specialist executor pending"}
     if result["project"] != "portfolio":
         project_data = get_project(result["project"]) or {}
         execution = execute(
@@ -30,6 +31,10 @@ def process_command(text):
             result["department"],
             project_data
         )
+
+    status = execution.get("status")
+    update_status(task, "FAILED" if status == "FAILED" else "COMPLETED" if status == "CHECKED" else "PLANNED")
+    save_task(task)
 
     return (
         f"🧠 POOH\n"
