@@ -51,9 +51,14 @@ if TELEGRAM_BOT_TOKEN:
         user_id = str(msg["from"]["id"])
         text = msg.get("text", "")
 
-        if ADMIN_TELEGRAM_ID and user_id != ADMIN_TELEGRAM_ID:
-            send_telegram_message(chat_id, "⚠️ Unauthorized access restricted to COO Admin.")
-            return "OK", 200
+        if not ADMIN_TELEGRAM_ID or not TELEGRAM_WEBHOOK_SECRET:
+            return "Unauthorized", 403
+
+        if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != TELEGRAM_WEBHOOK_SECRET:
+            return "Unauthorized", 403
+
+        if user_id != ADMIN_TELEGRAM_ID:
+            return "Unauthorized", 403
 
         if text.startswith("/status"):
             send_telegram_message(chat_id, "🚀 *LeadsIndia COO Status:* Systems active, multi-category architecture on standby, 24/7 cloud running.")
