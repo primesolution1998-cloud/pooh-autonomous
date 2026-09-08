@@ -5,12 +5,34 @@ from core.approval_gate import needs_approval
 from core.task_engine import create_task, update_status
 from core.task_store import save_task
 from core.ai_brain import think
+from core.ytc_sheets_executor import execute_ytc_sheet_command
 
 
 def process_command(text):
     task = create_task(text)
     result = analyze_task(text)
     update_status(task, "ROUTED")
+
+    ytc_execution = execute_ytc_sheet_command(text, task["id"])
+    if ytc_execution is not None:
+        ytc_status = ytc_execution.get("status")
+        if ytc_status == "AWAITING_APPROVAL":
+            update_status(task, "AWAITING_APPROVAL")
+        elif ytc_status == "FAILED":
+            update_status(task, "FAILED")
+        elif ytc_status == "EXECUTED":
+            update_status(task, "COMPLETED")
+        elif ytc_status == "DUPLICATE_BLOCKED":
+            update_status(task, "BLOCKED")
+        else:
+            update_status(task, "PLANNED")
+        task["execution"] = ytc_execution
+        save_task(task)
+        return (
+            f"🧠 POOH — YTC SHEETS\n"
+            f"Task: {text}\n"
+            f"Execution: {ytc_execution}"
+        )
 
     if needs_approval(text):
         update_status(task, "AWAITING_APPROVAL")
