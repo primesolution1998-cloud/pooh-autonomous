@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+case "$1" in
+  test)
+    python3 -m compileall -q core agents && echo "POOH CORE OK"
+    ;;
+  status)
+    git status --short
+    ;;
+  log)
+    git log --oneline -5
+    ;;
+  *)
+    echo "Usage: ./poohctl {test|status|log}"
+    ;;
+esac

@@ -1,0 +1,16 @@
+{
+  "business_manager": ["planning","budget","profit_loss","priorities"],
+  "market_research": ["demand","competitors","pricing","opportunities"],
+  "website_developer": ["develop","fix","github","features"],
+  "qa_tester": ["test","errors","regression","verification"],
+  "deployment_manager": ["build","deploy","health_check"],
+  "product_creator": ["books","courses","digital_products"],
+  "content_creator": ["copy","scripts","posts","creatives"],
+  "marketing_manager": ["campaigns","audience","budget","roas"],
+  "sales_manager": ["offers","conversion","sales_strategy"],
+  "crm_manager": ["leads","followups","admissions"],
+  "customer_reply": ["whatsapp","customer_support","responses"],
+  "seo_manager": ["seo","keywords","organic_growth"],
+  "finance_manager": ["revenue","expenses","profit","budget_control"],
+  "analytics_manager": ["metrics","funnels","performance","alerts"]
+}

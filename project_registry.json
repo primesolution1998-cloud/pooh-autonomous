@@ -1,0 +1,17 @@
+{
+  "leadsindia": {
+    "repo": "primesolution1998-cloud/leadsindia-website",
+    "url": "https://leadsindia.in",
+    "enabled": true
+  },
+  "shruti": {
+    "repo": "primesolution1998-cloud/shruti-ai-english-tutor",
+    "url": "https://ai.ytceducation.com",
+    "enabled": true
+  },
+  "ytc": {
+    "repo": "primesolution1998-cloud/ytc-education-website",
+    "url": "https://ytceducation.com",
+    "enabled": true
+  }
+}
