@@ -1,10 +1,11 @@
 import os
 import logging
-from flask import Flask, request
-from core.command_processor import process_command
-import requests
 import threading
 import time
+import requests
+from flask import Flask, request
+from core.command_processor import process_command, approve_task
+from core.task_store import list_tasks, get_task
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Pooh-LeadsIndia-Cloud")
@@ -14,24 +15,35 @@ app = Flask(__name__)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+POOH_API_KEY = os.getenv("POOH_API_KEY", "")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}" if TELEGRAM_BOT_TOKEN else ""
+
+
+def _api_authorized():
+    return bool(POOH_API_KEY) and request.headers.get("X-POOH-Key") == POOH_API_KEY
+
 
 def send_telegram_message(chat_id, text):
     if not TELEGRAM_API_URL:
         return
     try:
-        requests.post(f"{TELEGRAM_API_URL}/sendMessage", json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
-    except Exception as e:
-        logger.error(f"Telegram error: {e}")
+        requests.post(
+            f"{TELEGRAM_API_URL}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+            timeout=10,
+        )
+    except Exception as exc:
+        logger.error("Telegram error: %s", exc)
+
 
 @app.route("/", methods=["GET"])
 def health_check():
-    return "Pooh Autonomous & LeadsIndia COO Engine is Live 24/7!", 200
+    return {"service": "pooh-autonomous", "status": "ok"}, 200
+
 
 @app.route("/api/command", methods=["POST"])
 def api_command():
-    api_key = os.getenv("POOH_API_KEY", "")
-    if not api_key or request.headers.get("X-POOH-Key") != api_key:
+    if not _api_authorized():
         return {"error": "unauthorized"}, 401
     data = request.get_json(silent=True) or {}
     text = str(data.get("command", "")).strip()
@@ -39,47 +51,81 @@ def api_command():
         return {"error": "command required"}, 400
     return {"response": process_command(text)}, 200
 
+
+@app.route("/api/tasks", methods=["GET"])
+def api_tasks():
+    if not _api_authorized():
+        return {"error": "unauthorized"}, 401
+    status = request.args.get("status") or None
+    limit = request.args.get("limit", "50")
+    try:
+        limit = int(limit)
+    except ValueError:
+        return {"error": "invalid limit"}, 400
+    return {"tasks": list_tasks(limit=limit, status=status)}, 200
+
+
+@app.route("/api/tasks/<task_id>", methods=["GET"])
+def api_task(task_id):
+    if not _api_authorized():
+        return {"error": "unauthorized"}, 401
+    task = get_task(task_id)
+    if not task:
+        return {"error": "not_found"}, 404
+    return {"task": task}, 200
+
+
+@app.route("/api/tasks/<task_id>/approve", methods=["POST"])
+def api_approve(task_id):
+    if not _api_authorized():
+        return {"error": "unauthorized"}, 401
+    result = approve_task(task_id)
+    return result, 200 if result.get("ok") else 409 if result.get("error") == "task_not_awaiting_approval" else 404
+
+
 if TELEGRAM_BOT_TOKEN:
     @app.route("/webhook/telegram", methods=["POST"])
     def telegram_webhook():
-        update = request.get_json()
-        if not update or "message" not in update:
-            return "OK", 200
-        
-        msg = update["message"]
-        chat_id = msg["chat"]["id"]
-        user_id = str(msg["from"]["id"])
-        text = msg.get("text", "")
-
         if not ADMIN_TELEGRAM_ID or not TELEGRAM_WEBHOOK_SECRET:
             return "Unauthorized", 403
-
         if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != TELEGRAM_WEBHOOK_SECRET:
             return "Unauthorized", 403
-
+        update = request.get_json(silent=True) or {}
+        msg = update.get("message")
+        if not msg:
+            return "OK", 200
+        chat_id = msg.get("chat", {}).get("id")
+        user_id = str(msg.get("from", {}).get("id", ""))
+        text = str(msg.get("text", "")).strip()
         if user_id != ADMIN_TELEGRAM_ID:
             return "Unauthorized", 403
 
-        if text.startswith("/status"):
-            send_telegram_message(chat_id, "🚀 *LeadsIndia COO Status:* Systems active, multi-category architecture on standby, 24/7 cloud running.")
-        elif text.startswith("/trigger"):
-            send_telegram_message(chat_id, "⚡ Autonomous execution cycle triggered successfully.")
+        if text == "/status":
+            awaiting = len(list_tasks(limit=100, status="AWAITING_APPROVAL"))
+            send_telegram_message(chat_id, f"🚀 *POOH Status*\nService: active\nAwaiting approval: {awaiting}")
+        elif text.startswith("/approve "):
+            task_id = text.split(maxsplit=1)[1].strip()
+            result = approve_task(task_id)
+            send_telegram_message(chat_id, f"Approval result: `{result}`")
+        elif text == "/tasks":
+            tasks = list_tasks(limit=10)
+            lines = [f"{t.get('id')} — {t.get('status')} — {t.get('command','')[:45]}" for t in tasks]
+            send_telegram_message(chat_id, "*Latest Tasks*\n" + ("\n".join(lines) if lines else "No tasks"))
         else:
-            result = process_command(text)
-            send_telegram_message(chat_id, result)
-        
+            send_telegram_message(chat_id, process_command(text))
         return "OK", 200
 
-# Keep-alive background ping to prevent Render free tier sleep
+
 def keep_alive():
     while True:
         try:
             render_url = os.getenv("RENDER_EXTERNAL_URL")
             if render_url:
-                requests.get(render_url)
+                requests.get(render_url, timeout=10)
         except Exception:
             pass
         time.sleep(300)
+
 
 if __name__ == "__main__":
     threading.Thread(target=keep_alive, daemon=True).start()
