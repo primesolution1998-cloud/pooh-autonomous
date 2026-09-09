@@ -16,6 +16,8 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 ADMIN_TELEGRAM_ID = os.getenv("ADMIN_TELEGRAM_ID", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
 POOH_API_KEY = os.getenv("POOH_API_KEY", "")
+POOH_PRIMARY = os.getenv("POOH_PRIMARY", "false").lower() == "true"
+REGISTER_TELEGRAM_WEBHOOK = os.getenv("REGISTER_TELEGRAM_WEBHOOK", "false").lower() == "true"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}" if TELEGRAM_BOT_TOKEN else ""
 
 
@@ -36,9 +38,41 @@ def send_telegram_message(chat_id, text):
         logger.error("Telegram error: %s", exc)
 
 
+def register_telegram_webhook():
+    if not (POOH_PRIMARY and REGISTER_TELEGRAM_WEBHOOK and TELEGRAM_API_URL and TELEGRAM_WEBHOOK_SECRET):
+        return
+    render_url = os.getenv("RENDER_EXTERNAL_URL", "").rstrip("/")
+    if not render_url:
+        logger.warning("Telegram webhook not registered: RENDER_EXTERNAL_URL missing")
+        return
+    webhook_url = f"{render_url}/webhook/telegram"
+    try:
+        response = requests.post(
+            f"{TELEGRAM_API_URL}/setWebhook",
+            json={
+                "url": webhook_url,
+                "secret_token": TELEGRAM_WEBHOOK_SECRET,
+                "drop_pending_updates": True,
+            },
+            timeout=15,
+        )
+        payload = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+        if response.ok and payload.get("ok"):
+            logger.info("Telegram webhook registered at /webhook/telegram")
+        else:
+            logger.error("Telegram webhook registration failed: status=%s description=%s", response.status_code, payload.get("description", "unknown"))
+    except Exception as exc:
+        logger.error("Telegram webhook registration error: %s", exc)
+
+
 @app.route("/", methods=["GET"])
 def health_check():
-    return {"service": "pooh-autonomous", "status": "ok"}, 200
+    return {
+        "service": "pooh-autonomous",
+        "status": "ok",
+        "primary": POOH_PRIMARY,
+        "telegram_webhook_owner": bool(POOH_PRIMARY and REGISTER_TELEGRAM_WEBHOOK),
+    }, 200
 
 
 @app.route("/api/command", methods=["POST"])
@@ -86,6 +120,8 @@ def api_approve(task_id):
 if TELEGRAM_BOT_TOKEN:
     @app.route("/webhook/telegram", methods=["POST"])
     def telegram_webhook():
+        if not POOH_PRIMARY:
+            return "Not primary", 503
         if not ADMIN_TELEGRAM_ID or not TELEGRAM_WEBHOOK_SECRET:
             return "Unauthorized", 403
         if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != TELEGRAM_WEBHOOK_SECRET:
@@ -128,6 +164,7 @@ def keep_alive():
 
 
 if __name__ == "__main__":
+    register_telegram_webhook()
     threading.Thread(target=keep_alive, daemon=True).start()
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
